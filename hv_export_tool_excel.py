@@ -73,6 +73,7 @@ def list_extracted_csv_files(extract_path):
 
 @log_decorator
 def read_csv_convert_to_excel(file):
+        large = False
         short_file_name = file.split('\\')[-1]
         short_file_name = short_file_name.replace(".csv", ".xlsx")
         output_file = file.replace(".csv", ".xlsx")
@@ -90,42 +91,58 @@ def read_csv_convert_to_excel(file):
         ws = wb['Sheet1']
 
         # Create a reference to the data for the chart
-        values = Reference(ws, min_col=2, min_row=2, max_col=ws.max_column, max_row=ws.max_row)
-        categories = Reference(ws, min_col=1, min_row=2, max_col=1, max_row=ws.max_row)
+        # values = Reference(ws, min_col=2, min_row=2, max_col=ws.max_column, max_row=ws.max_row)
+        remaining_col = ws.max_column
+        current_col = 2
+        where_to_add_chart = 5
+        while remaining_col > 0:
+            if remaining_col >= 250:
+                values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+250, max_row=ws.max_row)
+                remaining_col = remaining_col - 250
+                current_col = current_col + 250
+            else:
+                values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+remaining_col, max_row=ws.max_row)
+                remaining_col = remaining_col - 250
+                current_col = current_col+remaining_col
+            categories = Reference(ws, min_col=1, min_row=2, max_col=1, max_row=ws.max_row)
 
-        # Create the chart
-        chart = LineChart()
-        chart.add_data(values, titles_from_data=True)
-        chart.set_categories(categories)
-        chart.title = short_file_name.replace(".xlsx", "")
-        # Set axis titles
-        chart.x_axis.title = "DateTime"
-        chart.y_axis.title = "Values"
+            # Create the chart
+            chart = LineChart()
+            chart.add_data(values, titles_from_data=True)
+            chart.set_categories(categories)
+            chart.title = short_file_name.replace(".xlsx", "")
+            # Set axis titles
+            chart.x_axis.title = "DateTime"
+            chart.y_axis.title = "Values"
 
-        # Explicitly set axis lines to be visible
-        chart.x_axis.majorTickMark = "in"
-        chart.y_axis.majorTickMark = "in"
-        chart.x_axis.minorTickMark = "in"
-        chart.y_axis.minorTickMark = "in"
+            # Explicitly set axis lines to be visible
+            chart.x_axis.majorTickMark = "in"
+            chart.y_axis.majorTickMark = "in"
+            chart.x_axis.minorTickMark = "in"
+            chart.y_axis.minorTickMark = "in"
 
-        # Set number format for axis labels
-        chart.x_axis.number_format = 'dd-mmm-yyyy hh:mm'
-        chart.y_axis.number_format = 'General'
+            # Set number format for axis labels
+            chart.x_axis.number_format = 'dd-mmm-yyyy hh:mm'
+            chart.y_axis.number_format = 'General'
 
-        # Ensure tick labels are shown
-        chart.x_axis.tickLblPos = 'nextTo'
-        chart.y_axis.tickLblPos = 'nextTo'
-        chart.x_axis.delete = False
-        chart.y_axis.delete = False
-        # Add the chart to the sheet
-        ws.add_chart(chart, "C5")
+            # Ensure tick labels are shown
+            chart.x_axis.tickLblPos = 'nextTo'
+            chart.y_axis.tickLblPos = 'nextTo'
+            chart.x_axis.delete = False
+            chart.y_axis.delete = False
+            # Add the chart to the sheet
+            anchor = "C" + str(where_to_add_chart)
+            ws.add_chart(chart, anchor)
+            where_to_add_chart = where_to_add_chart + 60
 
-        # Adjust the size of the chart
-        chart.width = 60  # Set the width of the chart
-        chart.height = 30  # Set the height of the chart
+            # Adjust the size of the chart
+            chart.width = 60  # Set the width of the chart
+            chart.height = 30  # Set the height of the chart
 
-        # Save the workbook
-        wb.save(output_file)
+            # Save the workbook
+            wb.save(output_file)
+        # Close the workbook
+        wb.close()
         return pivot_df
 
 
@@ -139,6 +156,8 @@ for file in list_extracted_csv_files:
     xl = read_csv_convert_to_excel(file)
     # os.remove(file)
 
+
+# xl = read_csv_convert_to_excel("C:\\Users\\alexa\\Downloads\\extracted\\out_prod\\LU\Write_IOPS\\Write_IOPS.csv")
 
 
 
