@@ -139,8 +139,8 @@ def read_csv_convert_to_excel(file):
             chart.width = 60  # Set the width of the chart
             chart.height = 30  # Set the height of the chart
 
-            # Save the workbook
-            wb.save(output_file)
+        # Save the workbook
+        wb.save(output_file)
         # Close the workbook
         wb.close()
         return pivot_df
