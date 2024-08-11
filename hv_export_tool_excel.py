@@ -15,6 +15,8 @@ from io import StringIO
 import multiprocessing as mp
 
 import cProfile
+import gc
+# import tracemalloc
 
 # Create a logger
 logger = logging.getLogger(__name__)
@@ -157,6 +159,7 @@ def read_csv_convert_to_excel_midrange(file):
 
 @log_decorator
 def read_csv_convert_to_excel_highend(file):
+    # tracemalloc.start()
     large = False
     short_file_name = file.split('\\')[-1]
     short_file_name = short_file_name.replace(".csv", ".xlsx")
@@ -177,13 +180,20 @@ def read_csv_convert_to_excel_highend(file):
             fixed_lines[index] = fixed_lines[index].strip() + "," + split_l_without_index_and_date_str
         else:
             fixed_lines.insert(index, l)
+    del lines
     data_str = "\n".join(fixed_lines)
+    del fixed_lines
     data_io = StringIO(data_str)
+    del data_str
     df = pd.read_csv(data_io, delimiter=',')
     df.reset_index(drop=True, inplace=True)
     df.drop(columns=['No.'], inplace=True)
     df.set_index('time', inplace=True)
     df.to_excel(file.replace(".csv", ".xlsx"))
+    del df
+    gc.collect()
+    # print(tracemalloc.get_traced_memory())
+    # tracemalloc.stop()
     # Load the workbook and select the sheet
     wb = load_workbook(output_file)
     ws = wb['Sheet1']
@@ -238,11 +248,13 @@ def read_csv_convert_to_excel_highend(file):
         chart.width = 60  # Set the width of the chart
         chart.height = 30  # Set the height of the chart
 
+
     # Save the workbook
     wb.save(output_file)
     # Close the workbook
     wb.close()
     # return df
+
 
 def main():
     chunk_size = 1
@@ -265,9 +277,9 @@ def main():
             list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
     elif archive_type == "highend":
         with mp.Pool() as pool:
-            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=chunk_size))
+            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=10))
 
 
 if __name__ == "__main__":
-    # main()
-    cProfile.run('main()', sort='tottime')
+    main()
+    # cProfile.run('main()', sort='tottime')
