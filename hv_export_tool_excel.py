@@ -12,6 +12,10 @@ from openpyxl import load_workbook
 from openpyxl.chart import LineChart, Reference
 from io import StringIO
 
+import multiprocessing as mp
+
+import cProfile
+
 # Create a logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -148,7 +152,7 @@ def read_csv_convert_to_excel_midrange(file):
         wb.save(output_file)
         # Close the workbook
         wb.close()
-        return pivot_df
+        # return pivot_df
 
 
 @log_decorator
@@ -176,7 +180,7 @@ def read_csv_convert_to_excel_highend(file):
     data_str = "\n".join(fixed_lines)
     data_io = StringIO(data_str)
     df = pd.read_csv(data_io, delimiter=',')
-    # print(df)
+    df.reset_index(drop=True, inplace=True)
     df.drop(columns=['No.'], inplace=True)
     df.set_index('time', inplace=True)
     df.to_excel(file.replace(".csv", ".xlsx"))
@@ -238,25 +242,32 @@ def read_csv_convert_to_excel_highend(file):
     wb.save(output_file)
     # Close the workbook
     wb.close()
-    return df
+    # return df
+
+def main():
+    chunk_size = 1
+    user_input = get_arguments()
+    zip_path = user_input.zippath
+    extract_path = user_input.extractpath
+
+    archive_type = unzip_all(zip_path, extract_path)
+    print(archive_type)
+    my_files = list_extracted_csv_files(extract_path)
+    # if archive_type == "midrange":
+    #     for file in my_files:
+    #         read_csv_convert_to_excel_midrange(file)
+    #         # os.remove(file)
+    # elif archive_type == "highend":
+    #     for file in my_files:
+    #         read_csv_convert_to_excel_highend(file)
+    if archive_type == "midrange":
+        with mp.Pool() as pool:
+            list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
+    elif archive_type == "highend":
+        with mp.Pool() as pool:
+            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=chunk_size))
 
 
-user_input = get_arguments()
-zip_path = user_input.zippath
-extract_path = user_input.extractpath
-
-archive_type = unzip_all(zip_path, extract_path)
-print(archive_type)
-list_extracted_csv_files = list_extracted_csv_files(extract_path)
-if archive_type == "midrange":
-    #-z "C:\Users\alexa\Downloads\out_prod.20240711.1001.zip" -e "C:\Users\alexa\Downloads\extracted"
-    for file in list_extracted_csv_files:
-        xl = read_csv_convert_to_excel_midrange(file)
-        # os.remove(file)
-elif archive_type == "highend":
-    # -z "C:\Users\alexa\Downloads\export_tool_30579_Rotem_20240521 (1).zip" -e "C:\Users\alexa\Downloads\extracted"
-    for file in list_extracted_csv_files:
-        xl = read_csv_convert_to_excel_highend(file)
-
-
-
+if __name__ == "__main__":
+    # main()
+    cProfile.run('main()', sort='tottime')
