@@ -18,6 +18,8 @@ import cProfile
 import gc
 # import tracemalloc
 
+import random
+
 # Create a logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -276,6 +278,7 @@ def main():
         with mp.Pool() as pool:
             list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
     elif archive_type == "highend":
+        random.shuffle(my_files)
         with mp.Pool() as pool:
             list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=5))
 
