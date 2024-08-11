@@ -11,14 +11,11 @@ import xlsxwriter
 from openpyxl import load_workbook
 from openpyxl.chart import LineChart, Reference
 from io import StringIO
-
 import multiprocessing as mp
-
 import cProfile
 import gc
-# import tracemalloc
-
 import random
+from tqdm import tqdm
 
 # Create a logger
 logger = logging.getLogger(__name__)
@@ -33,6 +30,8 @@ stdout_handler.setFormatter(formatter)
 # Add the handlers to the logger
 logger.addHandler(file_handler)
 logger.addHandler(stdout_handler)
+
+
 def log_decorator(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
@@ -53,6 +52,7 @@ def get_arguments():
         parser.exit("Enter full path where zip file is going to be extracted e.g. \"c:\\extracted_zip\"")
     return arguments
 
+
 @log_decorator
 def unzip_all(zip_path, extract_path):
     archive_type="highend"
@@ -72,6 +72,7 @@ def unzip_all(zip_path, extract_path):
                     os.remove(file_path)
     return archive_type
 
+
 # Example usage
 @log_decorator
 def list_extracted_csv_files(extract_path):
@@ -84,118 +85,13 @@ def list_extracted_csv_files(extract_path):
                 extracted_files_list.append(file_path)
     return extracted_files_list
 
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-        large = False
-        short_file_name = file.split('\\')[-1]
-        short_file_name = short_file_name.replace(".csv", ".xlsx")
-        output_file = file.replace(".csv", ".xlsx")
-        # print(output_file)
-
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID', 'Date', 'Time']]
-        # print(value_columns)
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-        pivot_df.to_excel(output_file)
-        # Load the workbook and select the sheet
-        wb = load_workbook(output_file)
-        ws = wb['Sheet1']
-
-        # Create a reference to the data for the chart
-        # values = Reference(ws, min_col=2, min_row=2, max_col=ws.max_column, max_row=ws.max_row)
-        remaining_col = ws.max_column
-        current_col = 2
-        where_to_add_chart = 5
-        while remaining_col > 0:
-            if remaining_col >= 250:
-                values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+250, max_row=ws.max_row)
-                remaining_col = remaining_col - 250
-                current_col = current_col + 250
-            else:
-                values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+remaining_col, max_row=ws.max_row)
-                remaining_col = remaining_col - 250
-                current_col = current_col+remaining_col
-            categories = Reference(ws, min_col=1, min_row=2, max_col=1, max_row=ws.max_row)
-
-            # Create the chart
-            chart = LineChart()
-            chart.add_data(values, titles_from_data=True)
-            chart.set_categories(categories)
-            chart.title = short_file_name.replace(".xlsx", "")
-            # Set axis titles
-            chart.x_axis.title = "DateTime"
-            chart.y_axis.title = "Values"
-
-            # Explicitly set axis lines to be visible
-            chart.x_axis.majorTickMark = "in"
-            chart.y_axis.majorTickMark = "in"
-            chart.x_axis.minorTickMark = "in"
-            chart.y_axis.minorTickMark = "in"
-
-            # Set number format for axis labels
-            chart.x_axis.number_format = 'dd-mmm-yyyy hh:mm'
-            chart.y_axis.number_format = 'General'
-
-            # Ensure tick labels are shown
-            chart.x_axis.tickLblPos = 'nextTo'
-            chart.y_axis.tickLblPos = 'nextTo'
-            chart.x_axis.delete = False
-            chart.y_axis.delete = False
-            # Add the chart to the sheet
-            anchor = "C" + str(where_to_add_chart)
-            ws.add_chart(chart, anchor)
-            where_to_add_chart = where_to_add_chart + 60
-
-            # Adjust the size of the chart
-            chart.width = 60  # Set the width of the chart
-            chart.height = 30  # Set the height of the chart
-
-        # Save the workbook
-        wb.save(output_file)
-        # Close the workbook
-        wb.close()
-        # return pivot_df
-
 
 @log_decorator
-def read_csv_convert_to_excel_highend(file):
-    # tracemalloc.start()
+def add_charts(file, data_min_row):
     large = False
     short_file_name = file.split('\\')[-1]
     short_file_name = short_file_name.replace(".csv", ".xlsx")
     output_file = file.replace(".csv", ".xlsx")
-    #df = pd.read_csv(file, skiprows=6)
-    with open(file, 'r') as csv:
-        # Read all lines from the file
-        lines = csv.readlines()
-    # Drop the first 6 lines
-    lines = lines[6:]
-    fixed_lines = []
-    for l in lines:
-        index = int(l.split(',')[0].replace("\"", "").replace("No.", "0"))
-        if 0 <= index < len(fixed_lines):
-            split_l = l.split(',')
-            split_l_without_index_and_date = split_l[2:]
-            split_l_without_index_and_date_str = ",".join(split_l_without_index_and_date)
-            fixed_lines[index] = fixed_lines[index].strip() + "," + split_l_without_index_and_date_str
-        else:
-            fixed_lines.insert(index, l)
-    del lines
-    data_str = "\n".join(fixed_lines)
-    del fixed_lines
-    data_io = StringIO(data_str)
-    del data_str
-    df = pd.read_csv(data_io, delimiter=',')
-    df.reset_index(drop=True, inplace=True)
-    df.drop(columns=['No.'], inplace=True)
-    df.set_index('time', inplace=True)
-    df.to_excel(file.replace(".csv", ".xlsx"))
-    del df
-    gc.collect()
-    # print(tracemalloc.get_traced_memory())
-    # tracemalloc.stop()
     # Load the workbook and select the sheet
     wb = load_workbook(output_file)
     ws = wb['Sheet1']
@@ -207,11 +103,11 @@ def read_csv_convert_to_excel_highend(file):
     where_to_add_chart = 5
     while remaining_col > 0:
         if remaining_col >= 250:
-            values = Reference(ws, min_col=current_col, min_row=1, max_col=current_col + 250, max_row=ws.max_row)
+            values = Reference(ws, min_col=current_col, min_row=data_min_row, max_col=current_col + 250, max_row=ws.max_row)
             remaining_col = remaining_col - 250
             current_col = current_col + 250
         else:
-            values = Reference(ws, min_col=current_col, min_row=1, max_col=current_col + remaining_col,
+            values = Reference(ws, min_col=current_col, min_row=data_min_row, max_col=current_col + remaining_col,
                                max_row=ws.max_row)
             remaining_col = remaining_col - 250
             current_col = current_col + remaining_col
@@ -249,13 +145,127 @@ def read_csv_convert_to_excel_highend(file):
         # Adjust the size of the chart
         chart.width = 60  # Set the width of the chart
         chart.height = 30  # Set the height of the chart
-
-
     # Save the workbook
     wb.save(output_file)
     # Close the workbook
     wb.close()
-    # return df
+
+
+@log_decorator
+def read_csv_convert_to_excel_midrange(file):
+        # # large = False
+        # short_file_name = file.split('\\')[-1]
+        # short_file_name = short_file_name.replace(".csv", ".xlsx")
+        # output_file = file.replace(".csv", ".xlsx")
+        # # print(output_file)
+        df = pd.read_csv(file, delimiter=',')
+        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
+        df.drop(columns=['Date', 'Time'], inplace=True)
+        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID', 'Date', 'Time']]
+        # print(value_columns)
+        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
+        del value_columns
+        del df
+        gc.collect()
+        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
+        del pivot_df
+        gc.collect()
+        add_charts(file, 2)
+        # # Load the workbook and select the sheet
+        # wb = load_workbook(output_file)
+        # ws = wb['Sheet1']
+        #
+        # # Create a reference to the data for the chart
+        # # values = Reference(ws, min_col=2, min_row=2, max_col=ws.max_column, max_row=ws.max_row)
+        # remaining_col = ws.max_column
+        # current_col = 2
+        # where_to_add_chart = 5
+        # while remaining_col > 0:
+        #     if remaining_col >= 250:
+        #         values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+250, max_row=ws.max_row)
+        #         remaining_col = remaining_col - 250
+        #         current_col = current_col + 250
+        #     else:
+        #         values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+remaining_col, max_row=ws.max_row)
+        #         remaining_col = remaining_col - 250
+        #         current_col = current_col+remaining_col
+        #     categories = Reference(ws, min_col=1, min_row=2, max_col=1, max_row=ws.max_row)
+        #
+        #     # Create the chart
+        #     chart = LineChart()
+        #     chart.add_data(values, titles_from_data=True)
+        #     chart.set_categories(categories)
+        #     chart.title = short_file_name.replace(".xlsx", "")
+        #     # Set axis titles
+        #     chart.x_axis.title = "DateTime"
+        #     chart.y_axis.title = "Values"
+        #
+        #     # Explicitly set axis lines to be visible
+        #     chart.x_axis.majorTickMark = "in"
+        #     chart.y_axis.majorTickMark = "in"
+        #     chart.x_axis.minorTickMark = "in"
+        #     chart.y_axis.minorTickMark = "in"
+        #
+        #     # Set number format for axis labels
+        #     chart.x_axis.number_format = 'dd-mmm-yyyy hh:mm'
+        #     chart.y_axis.number_format = 'General'
+        #
+        #     # Ensure tick labels are shown
+        #     chart.x_axis.tickLblPos = 'nextTo'
+        #     chart.y_axis.tickLblPos = 'nextTo'
+        #     chart.x_axis.delete = False
+        #     chart.y_axis.delete = False
+        #     # Add the chart to the sheet
+        #     anchor = "C" + str(where_to_add_chart)
+        #     ws.add_chart(chart, anchor)
+        #     where_to_add_chart = where_to_add_chart + 60
+        #
+        #     # Adjust the size of the chart
+        #     chart.width = 60  # Set the width of the chart
+        #     chart.height = 30  # Set the height of the chart
+        #
+        # # Save the workbook
+        # wb.save(output_file)
+        # # Close the workbook
+        # wb.close()
+        # # return pivot_df
+
+
+@log_decorator
+def read_csv_convert_to_excel_highend(file):
+    with open(file, 'r') as csv:
+        # Read all lines from the file
+        lines = csv.readlines()
+    # Drop the first 6 lines
+    lines = lines[6:]
+    fixed_lines = []
+    for l in lines:
+        index = int(l.split(',')[0].replace("\"", "").replace("No.", "0"))
+        if 0 <= index < len(fixed_lines):
+            split_l = l.split(',')
+            split_l_without_index_and_date = split_l[2:]
+            split_l_without_index_and_date_str = ",".join(split_l_without_index_and_date)
+            fixed_lines[index] = fixed_lines[index].strip() + "," + split_l_without_index_and_date_str
+        else:
+            fixed_lines.insert(index, l)
+    del lines
+    gc.collect()
+    data_str = "\n".join(fixed_lines)
+    del fixed_lines
+    gc.collect()
+    data_io = StringIO(data_str)
+    del data_str
+    gc.collect()
+    df = pd.read_csv(data_io, delimiter=',')
+    df.reset_index(drop=True, inplace=True)
+    df.drop(columns=['No.'], inplace=True)
+    df.set_index('time', inplace=True)
+    df.to_excel(file.replace(".csv", ".xlsx"))
+    del df
+    gc.collect()
+    # add charts to the Excel file
+    if "LU" not in file:
+        add_charts(file, 1)
 
 
 def main():
@@ -263,9 +273,8 @@ def main():
     user_input = get_arguments()
     zip_path = user_input.zippath
     extract_path = user_input.extractpath
-
     archive_type = unzip_all(zip_path, extract_path)
-    print(archive_type)
+    # print(archive_type)
     my_files = list_extracted_csv_files(extract_path)
     # if archive_type == "midrange":
     #     for file in my_files:
@@ -274,17 +283,21 @@ def main():
     # elif archive_type == "highend":
     #     for file in my_files:
     #         read_csv_convert_to_excel_highend(file)
+    random.shuffle(my_files)
     if archive_type == "midrange":
         with mp.Pool() as pool:
-            list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
+            # list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
+            for _ in tqdm(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size),
+                          total=len(my_files)):
+                pass
     elif archive_type == "highend":
-        random.shuffle(my_files)
         with mp.Pool() as pool:
-            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=5))
+            # list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=chunk_size))
+            for _ in tqdm(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=chunk_size),
+                          total=len(my_files)):
+                pass
 
 
 if __name__ == "__main__":
     main()
     # cProfile.run('main()', sort='tottime')
-
-
