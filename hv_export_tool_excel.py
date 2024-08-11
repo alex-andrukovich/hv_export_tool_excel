@@ -277,7 +277,7 @@ def main():
             list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
     elif archive_type == "highend":
         with mp.Pool() as pool:
-            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=10))
+            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=chunk_size))
 
 
 if __name__ == "__main__":
