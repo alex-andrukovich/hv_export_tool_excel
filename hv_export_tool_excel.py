@@ -277,9 +277,11 @@ def main():
             list(pool.imap_unordered(read_csv_convert_to_excel_midrange, my_files, chunksize=chunk_size))
     elif archive_type == "highend":
         with mp.Pool() as pool:
-            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=chunk_size))
+            list(pool.imap_unordered(read_csv_convert_to_excel_highend, my_files, chunksize=5))
 
 
 if __name__ == "__main__":
     main()
     # cProfile.run('main()', sort='tottime')
+
+
