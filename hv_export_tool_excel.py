@@ -12,7 +12,6 @@ from openpyxl import load_workbook
 from openpyxl.chart import LineChart, Reference
 from io import StringIO
 import multiprocessing as mp
-import cProfile
 import gc
 import random
 from tqdm import tqdm
@@ -153,11 +152,6 @@ def add_charts(file, data_min_row):
 
 @log_decorator
 def read_csv_convert_to_excel_midrange(file):
-        # # large = False
-        # short_file_name = file.split('\\')[-1]
-        # short_file_name = short_file_name.replace(".csv", ".xlsx")
-        # output_file = file.replace(".csv", ".xlsx")
-        # # print(output_file)
         df = pd.read_csv(file, delimiter=',')
         df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
         df.drop(columns=['Date', 'Time'], inplace=True)
@@ -171,64 +165,6 @@ def read_csv_convert_to_excel_midrange(file):
         del pivot_df
         gc.collect()
         add_charts(file, 2)
-        # # Load the workbook and select the sheet
-        # wb = load_workbook(output_file)
-        # ws = wb['Sheet1']
-        #
-        # # Create a reference to the data for the chart
-        # # values = Reference(ws, min_col=2, min_row=2, max_col=ws.max_column, max_row=ws.max_row)
-        # remaining_col = ws.max_column
-        # current_col = 2
-        # where_to_add_chart = 5
-        # while remaining_col > 0:
-        #     if remaining_col >= 250:
-        #         values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+250, max_row=ws.max_row)
-        #         remaining_col = remaining_col - 250
-        #         current_col = current_col + 250
-        #     else:
-        #         values = Reference(ws, min_col=current_col, min_row=2, max_col=current_col+remaining_col, max_row=ws.max_row)
-        #         remaining_col = remaining_col - 250
-        #         current_col = current_col+remaining_col
-        #     categories = Reference(ws, min_col=1, min_row=2, max_col=1, max_row=ws.max_row)
-        #
-        #     # Create the chart
-        #     chart = LineChart()
-        #     chart.add_data(values, titles_from_data=True)
-        #     chart.set_categories(categories)
-        #     chart.title = short_file_name.replace(".xlsx", "")
-        #     # Set axis titles
-        #     chart.x_axis.title = "DateTime"
-        #     chart.y_axis.title = "Values"
-        #
-        #     # Explicitly set axis lines to be visible
-        #     chart.x_axis.majorTickMark = "in"
-        #     chart.y_axis.majorTickMark = "in"
-        #     chart.x_axis.minorTickMark = "in"
-        #     chart.y_axis.minorTickMark = "in"
-        #
-        #     # Set number format for axis labels
-        #     chart.x_axis.number_format = 'dd-mmm-yyyy hh:mm'
-        #     chart.y_axis.number_format = 'General'
-        #
-        #     # Ensure tick labels are shown
-        #     chart.x_axis.tickLblPos = 'nextTo'
-        #     chart.y_axis.tickLblPos = 'nextTo'
-        #     chart.x_axis.delete = False
-        #     chart.y_axis.delete = False
-        #     # Add the chart to the sheet
-        #     anchor = "C" + str(where_to_add_chart)
-        #     ws.add_chart(chart, anchor)
-        #     where_to_add_chart = where_to_add_chart + 60
-        #
-        #     # Adjust the size of the chart
-        #     chart.width = 60  # Set the width of the chart
-        #     chart.height = 30  # Set the height of the chart
-        #
-        # # Save the workbook
-        # wb.save(output_file)
-        # # Close the workbook
-        # wb.close()
-        # # return pivot_df
 
 
 @log_decorator
@@ -250,22 +186,45 @@ def read_csv_convert_to_excel_highend(file):
             fixed_lines.insert(index, l)
     del lines
     gc.collect()
-    data_str = "\n".join(fixed_lines)
-    del fixed_lines
-    gc.collect()
-    data_io = StringIO(data_str)
-    del data_str
-    gc.collect()
-    df = pd.read_csv(data_io, delimiter=',')
-    df.reset_index(drop=True, inplace=True)
-    df.drop(columns=['No.'], inplace=True)
-    df.set_index('time', inplace=True)
-    df.to_excel(file.replace(".csv", ".xlsx"))
-    del df
-    gc.collect()
-    # add charts to the Excel file
-    if "LU" not in file:
-        add_charts(file, 1)
+    if "PhyProcDetail_dat" not in file:
+        data_str = "\n".join(fixed_lines)
+        del fixed_lines
+        gc.collect()
+        data_io = StringIO(data_str)
+        del data_str
+        gc.collect()
+        df = pd.read_csv(data_io, delimiter=',')
+        df.reset_index(drop=True, inplace=True)
+        df.drop(columns=['No.'], inplace=True)
+        df.set_index('time', inplace=True)
+        df.to_excel(file.replace(".csv", ".xlsx"))
+        del df
+        gc.collect()
+        # add charts to the Excel file
+        if "LU" not in file:
+            add_charts(file, 1)
+    else:
+        mppk_data_list = []
+        dataline = []
+        for l in fixed_lines[1:]:
+            splitlines = l.split(",")
+            splitlines = splitlines[1:]
+            if '-' not in splitlines[1]:
+                for mppk_item in splitlines[1:]:
+                    dataline.append(splitlines[0].replace('\"',''))
+                    values = mppk_item.strip().split(";")
+                    for value in values:
+                        dataline.append(value)
+                    mppk_data_list.append(dataline)
+                    dataline = []
+        df = pd.DataFrame(mppk_data_list, columns=['Date_and_time', 'Workload_Type', 'Worker', 'ID', 'Percent'])
+        del fixed_lines
+        gc.collect()
+        df['Percent'] = pd.to_numeric(df['Percent'])
+        df['Date_and_time'] = pd.to_datetime(df['Date_and_time'], format='%Y/%m/%d %H:%M')
+        df.to_excel(file.replace(".csv", ".xlsx"))
+        del df
+        gc.collect()
 
 
 def main():
@@ -276,13 +235,6 @@ def main():
     archive_type = unzip_all(zip_path, extract_path)
     # print(archive_type)
     my_files = list_extracted_csv_files(extract_path)
-    # if archive_type == "midrange":
-    #     for file in my_files:
-    #         read_csv_convert_to_excel_midrange(file)
-    #         # os.remove(file)
-    # elif archive_type == "highend":
-    #     for file in my_files:
-    #         read_csv_convert_to_excel_highend(file)
     random.shuffle(my_files)
     if archive_type == "midrange":
         with mp.Pool() as pool:
@@ -300,4 +252,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # cProfile.run('main()', sort='tottime')
