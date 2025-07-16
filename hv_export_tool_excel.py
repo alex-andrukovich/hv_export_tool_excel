@@ -209,7 +209,7 @@ def read_csv_convert_to_excel_highend(file):
         for l in fixed_lines[1:]:
             splitlines = l.split(",")
             splitlines = splitlines[1:]
-            if '-' not in splitlines[1]:
+            if '-4' not in splitlines[1]:
                 for mppk_item in splitlines[1:]:
                     dataline.append(splitlines[0].replace('\"',''))
                     values = mppk_item.strip().split(";")
