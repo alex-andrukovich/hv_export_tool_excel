@@ -150,275 +150,46 @@ def add_charts(file, data_min_row):
     wb.close()
 
 
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
 
 @log_decorator
 def read_csv_convert_to_excel_midrange(file):
     try:
         df = pd.read_csv(file, delimiter=',')
+
+        # Build DateTime
         df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
+
+        # Remove duplicates based on the pivot key
+        df = df.drop_duplicates(subset=['DateTime', 'ID'], keep='first')
+
+        # Drop original Date/Time columns
         df.drop(columns=['Date', 'Time'], inplace=True)
 
+        # Identify metric columns
         value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
+
+        # Pivot
         pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
 
+        # Cleanup
+        del value_columns
+        del df
+        gc.collect()
+
+        # Save
         pivot_df.to_excel(file.replace(".csv", ".xlsx"))
+
+        del pivot_df
+        gc.collect()
+
+        # Charts
         add_charts(file, 2)
 
     except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
+        logger.error(f"Failed processing file: {file}")
         logger.error(f"Reason: {e}")
-        return  # Skip file safely
+        return
 
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
-
-@log_decorator
-def read_csv_convert_to_excel_midrange(file):
-    try:
-        df = pd.read_csv(file, delimiter=',')
-        df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
-        df.drop(columns=['Date', 'Time'], inplace=True)
-
-        value_columns = [col for col in df.columns if col not in ['DateTime', 'ID']]
-        pivot_df = df.pivot(index='DateTime', columns='ID', values=value_columns)
-
-        pivot_df.to_excel(file.replace(".csv", ".xlsx"))
-        add_charts(file, 2)
-
-    except Exception as e:
-        logger.error(f"❌ Failed processing file: {file}")
-        logger.error(f"Reason: {e}")
-        return  # Skip file safely
 
 
 
